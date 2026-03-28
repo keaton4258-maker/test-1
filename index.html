@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="https://via.placeholder.com/192/001f3f/ffffff?text=NW">
+    <title>Personal Console</title>
+    <style>
+        body {
+            background: #001f3f; color: #39FF14; font-family: 'Courier New', monospace;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            height: 100vh; margin: 0; overflow: hidden;
+        }
+        .card {
+            border: 1px solid #39FF14; padding: 20px; border-radius: 10px; width: 80%;
+            box-shadow: 0 0 15px rgba(57, 255, 20, 0.3); text-align: center;
+        }
+        h1 { font-size: 1.2rem; margin-bottom: 20px; opacity: 0.8; }
+        .data { font-size: 1.5rem; margin-bottom: 10px; }
+        .btn {
+            background: transparent; border: 1px solid #39FF14; color: #39FF14;
+            padding: 10px 20px; margin-top: 20px; cursor: pointer; border-radius: 5px;
+            font-size: 1rem; width: 100%; active { background: #39FF14; color: #000; }
+        }
+        .status { font-size: 0.8rem; margin-top: 10px; color: #888; }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>[ SYSTEM STATUS ]</h1>
+    <div id="btc" class="data">BTC: Loading...</div>
+    <div id="nw-target" style="font-size: 0.8rem;">Target: 192.168.0.254</div>
+    <div id="ping-status" class="status">Waiting for handshake...</div>
+    
+    <button class="btn" onclick="vibeAndPing()">SEND PING & SYNC</button>
+</div>
+
+<script>
+    // 1. BTC価格の取得
+    async function fetchBTC() {
+        try {
+            const res = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot');
+            const data = await res.json();
+            document.getElementById('btc').innerText = `BTC: $${Math.floor(data.data.amount).toLocaleString()}`;
+        } catch (e) { document.getElementById('btc').innerText = 'BTC: OFFLINE'; }
+    }
+
+    // 2. バイブレーションとダミーPing実行
+    function vibeAndPing() {
+        // iPhoneのブラウザでバイブを鳴らす（ミリ秒指定）
+        if (navigator.vibrate) {
+            navigator.vibrate([50, 30, 50]); // トントン、というリズム
+        }
+        
+        const status = document.getElementById('ping-status');
+        status.innerText = "Pinging 192.168.0.254...";
+        status.style.color = "#39FF14";
+
+        setTimeout(() => {
+            status.innerText = "Reply from 192.168.0.254: bytes=32 time<1ms";
+            fetchBTC(); // ついでにBTCも更新
+        }, 800);
+    }
+
+    // 初期起動
+    fetchBTC();
+    setInterval(fetchBTC, 60000); // 1分ごとに自動更新
+</script>
+
+</body>
+</html>
