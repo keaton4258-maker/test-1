@@ -1,97 +1,97 @@
+<!DOCTYPE html>
+<html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <link rel="apple-touch-icon" href="https://via.placeholder.com/192/001f3f/39FF14?text=BTC">
-    <title>Asset Console</title>
+    <title>Real-Asset Console</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body {
-            background: #050505; color: #39FF14; font-family: 'Courier New', monospace;
-            display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0;
-        }
-        .container { width: 100%; max-width: 400px; }
-        .header { text-align: center; border-bottom: 1px solid #39FF14; margin-bottom: 20px; padding-bottom: 10px; }
-        .time { font-size: 1.2rem; margin-bottom: 5px; }
-        .price-main { font-size: 2rem; font-weight: bold; text-shadow: 0 0 10px #39FF14; }
-        .chart-container { background: #111; border: 1px solid #323232; border-radius: 8px; margin: 20px 0; padding: 10px; }
-        .stock-list { list-style: none; padding: 0; font-size: 0.9rem; }
-        .stock-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px border-style: dotted; border-color: #323232; }
-        .sync-btn {
-            background: #39FF14; color: #000; border: none; padding: 12px; width: 100%;
-            border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px;
-        }
+        body { background: #050505; color: #39FF14; font-family: 'Courier New', monospace; padding: 20px; margin: 0; }
+        .header { text-align: center; border-bottom: 1px solid #323232; padding-bottom: 15px; margin-bottom: 20px; }
+        #clock { font-size: 1.2rem; opacity: 0.7; }
+        #btc-jpy { font-size: 2.2rem; font-weight: bold; margin: 10px 0; }
+        .chart-container { background: #111; border-radius: 8px; padding: 10px; margin-bottom: 20px; height: 200px; }
+        .stock-list { border-top: 1px solid #323232; padding-top: 10px; }
+        .stock-item { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px dotted #222; text-decoration: none; color: inherit; }
+        .sync-btn { background: #39FF14; color: #000; border: none; padding: 15px; width: 100%; border-radius: 5px; font-weight: bold; margin-top: 15px; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="header">
-        <div id="clock" class="time">00:00:00</div>
-        <div id="btc-jpy" class="price-main">¥0,000,000</div>
-    </div>
-
-    <div class="chart-container">
-        <canvas id="btcChart"></canvas>
-    </div>
-
-    <div class="stock-list">
-        <div class="stock-item"><span>Metaplanet (3350)</span><span id="stk-3350">Checking...</span></div>
-        <div class="stock-item"><span>IBIT (iShares BTC)</span><span id="stk-ibit">Watching</span></div>
-        <div class="stock-item"><span>MicroStrategy (MSTR)</span><span>Targeting</span></div>
-    </div>
-
-    <button class="sync-btn" onclick="syncData()">SYNC & VIBRATE</button>
+<div class="header">
+    <div id="clock">00:00:00</div>
+    <div id="btc-jpy">Loading...</div>
 </div>
 
+<div class="chart-container">
+    <canvas id="btcChart"></canvas>
+</div>
+
+<div class="stock-list">
+    <a href="https://www.google.com/finance/quote/3350:TYO" class="stock-item">
+        <span>Metaplanet (3350)</span><span>Go to Chart ↗</span>
+    </a>
+    <a href="https://www.google.com/finance/quote/IBIT:NASDAQ" class="stock-item">
+        <span>iShares BTC (IBIT)</span><span>Check ↗</span>
+    </a>
+</div>
+
+<button class="sync-btn" onclick="updateAll()">SYNC REAL DATA</button>
+
 <script>
-    // 1. 時計機能
+    let chart;
+
     function updateClock() {
-        const now = new Date();
-        document.getElementById('clock').innerText = now.toLocaleTimeString('ja-JP');
+        document.getElementById('clock').innerText = new Date().toLocaleTimeString('ja-JP');
     }
     setInterval(updateClock, 1000);
 
-    // 2. BTC価格取得 (JPY)
-    async function fetchBTC() {
+    async function updateAll() {
+        if (navigator.vibrate) navigator.vibrate(50);
+        
+        // 1. BTC 現在価格 (JPY)
         try {
-            const res = await fetch('https://api.coinbase.com/v2/prices/BTC-JPY/spot');
+            const res = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=jpy');
             const data = await res.json();
-            document.getElementById('btc-jpy').innerText = `¥${Math.floor(data.data.amount).toLocaleString()}`;
-        } catch (e) { console.error("Fetch error"); }
-    }
+            document.getElementById('btc-jpy').innerText = `¥${data.bitcoin.jpy.toLocaleString()}`;
+        } catch(e) { document.getElementById('btc-jpy').innerText = "API Limit Over"; }
 
-    // 3. 簡易グラフ (Chart.js)
-    const ctx = document.getElementById('btcChart').getContext('2d');
-    const btcChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: ['Jan', 'Mar', 'May', 'Jul', 'Sep', 'Nov', 'Jan'],
-            datasets: [{
-                label: 'BTC 1Y Trend',
-                data: [4000000, 6000000, 8500000, 9000000, 8000000, 11000000, 15000000], // サンプル値
-                borderColor: '#39FF14',
-                borderWidth: 2,
-                pointRadius: 0,
-                fill: false,
-                tension: 0.4
-            }]
-        },
-        options: {
-            scales: { x: { display: false }, y: { display: false } },
-            plugins: { legend: { display: false } }
-        }
-    });
+        // 2. BTC 1年間の推移データ取得
+        try {
+            const res = await fetch('https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=jpy&days=365&interval=daily');
+            const data = await res.json();
+            const prices = data.prices.map(p => p[1]);
+            const labels = data.prices.map(p => ""); // ラベルは省略
 
-    // 4. 同期ボタン（バイブ付き）
-    function syncData() {
-        if (navigator.vibrate) navigator.vibrate(100);
-        fetchBTC();
-        // ここに株価取得ロジックなどを追加可能
+            if (chart) chart.destroy();
+            const ctx = document.getElementById('btcChart').getContext('2d');
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: prices,
+                        borderColor: '#39FF14',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { x: { display: false }, y: { grid: { color: '#222' }, ticks: { color: '#39FF14', font: { size: 10 } } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        } catch(e) { console.error("Chart error"); }
     }
 
     updateClock();
-    fetchBTC();
+    updateAll();
 </script>
 
 </body>
+</html>
