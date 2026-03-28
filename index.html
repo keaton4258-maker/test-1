@@ -4,70 +4,96 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="apple-touch-icon" href="https://via.placeholder.com/192/001f3f/ffffff?text=NW">
-    <title>Personal Console</title>
+    <link rel="apple-touch-icon" href="https://via.placeholder.com/192/001f3f/39FF14?text=BTC">
+    <title>Asset Console</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         body {
-            background: #001f3f; color: #39FF14; font-family: 'Courier New', monospace;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            height: 100vh; margin: 0; overflow: hidden;
+            background: #050505; color: #39FF14; font-family: 'Courier New', monospace;
+            display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0;
         }
-        .card {
-            border: 1px solid #39FF14; padding: 20px; border-radius: 10px; width: 80%;
-            box-shadow: 0 0 15px rgba(57, 255, 20, 0.3); text-align: center;
+        .container { width: 100%; max-width: 400px; }
+        .header { text-align: center; border-bottom: 1px solid #39FF14; margin-bottom: 20px; padding-bottom: 10px; }
+        .time { font-size: 1.2rem; margin-bottom: 5px; }
+        .price-main { font-size: 2rem; font-weight: bold; text-shadow: 0 0 10px #39FF14; }
+        .chart-container { background: #111; border: 1px solid #323232; border-radius: 8px; margin: 20px 0; padding: 10px; }
+        .stock-list { list-style: none; padding: 0; font-size: 0.9rem; }
+        .stock-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px border-style: dotted; border-color: #323232; }
+        .sync-btn {
+            background: #39FF14; color: #000; border: none; padding: 12px; width: 100%;
+            border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px;
         }
-        h1 { font-size: 1.2rem; margin-bottom: 20px; opacity: 0.8; }
-        .data { font-size: 1.5rem; margin-bottom: 10px; }
-        .btn {
-            background: transparent; border: 1px solid #39FF14; color: #39FF14;
-            padding: 10px 20px; margin-top: 20px; cursor: pointer; border-radius: 5px;
-            font-size: 1rem; width: 100%; active { background: #39FF14; color: #000; }
-        }
-        .status { font-size: 0.8rem; margin-top: 10px; color: #888; }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <h1>[ SYSTEM STATUS ]</h1>
-    <div id="btc" class="data">BTC: Loading...</div>
-    <div id="nw-target" style="font-size: 0.8rem;">Target: 192.168.0.254</div>
-    <div id="ping-status" class="status">Waiting for handshake...</div>
-    
-    <button class="btn" onclick="vibeAndPing()">SEND PING & SYNC</button>
+<div class="container">
+    <div class="header">
+        <div id="clock" class="time">00:00:00</div>
+        <div id="btc-jpy" class="price-main">¥0,000,000</div>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="btcChart"></canvas>
+    </div>
+
+    <div class="stock-list">
+        <div class="stock-item"><span>Metaplanet (3350)</span><span id="stk-3350">Checking...</span></div>
+        <div class="stock-item"><span>IBIT (iShares BTC)</span><span id="stk-ibit">Watching</span></div>
+        <div class="stock-item"><span>MicroStrategy (MSTR)</span><span>Targeting</span></div>
+    </div>
+
+    <button class="sync-btn" onclick="syncData()">SYNC & VIBRATE</button>
 </div>
 
 <script>
-    // 1. BTC価格の取得
+    // 1. 時計機能
+    function updateClock() {
+        const now = new Date();
+        document.getElementById('clock').innerText = now.toLocaleTimeString('ja-JP');
+    }
+    setInterval(updateClock, 1000);
+
+    // 2. BTC価格取得 (JPY)
     async function fetchBTC() {
         try {
-            const res = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot');
+            const res = await fetch('https://api.coinbase.com/v2/prices/BTC-JPY/spot');
             const data = await res.json();
-            document.getElementById('btc').innerText = `BTC: $${Math.floor(data.data.amount).toLocaleString()}`;
-        } catch (e) { document.getElementById('btc').innerText = 'BTC: OFFLINE'; }
+            document.getElementById('btc-jpy').innerText = `¥${Math.floor(data.data.amount).toLocaleString()}`;
+        } catch (e) { console.error("Fetch error"); }
     }
 
-    // 2. バイブレーションとダミーPing実行
-    function vibeAndPing() {
-        // iPhoneのブラウザでバイブを鳴らす（ミリ秒指定）
-        if (navigator.vibrate) {
-            navigator.vibrate([50, 30, 50]); // トントン、というリズム
+    // 3. 簡易グラフ (Chart.js)
+    const ctx = document.getElementById('btcChart').getContext('2d');
+    const btcChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: ['Jan', 'Mar', 'May', 'Jul', 'Sep', 'Nov', 'Jan'],
+            datasets: [{
+                label: 'BTC 1Y Trend',
+                data: [4000000, 6000000, 8500000, 9000000, 8000000, 11000000, 15000000], // サンプル値
+                borderColor: '#39FF14',
+                borderWidth: 2,
+                pointRadius: 0,
+                fill: false,
+                tension: 0.4
+            }]
+        },
+        options: {
+            scales: { x: { display: false }, y: { display: false } },
+            plugins: { legend: { display: false } }
         }
-        
-        const status = document.getElementById('ping-status');
-        status.innerText = "Pinging 192.168.0.254...";
-        status.style.color = "#39FF14";
+    });
 
-        setTimeout(() => {
-            status.innerText = "Reply from 192.168.0.254: bytes=32 time<1ms";
-            fetchBTC(); // ついでにBTCも更新
-        }, 800);
+    // 4. 同期ボタン（バイブ付き）
+    function syncData() {
+        if (navigator.vibrate) navigator.vibrate(100);
+        fetchBTC();
+        // ここに株価取得ロジックなどを追加可能
     }
 
-    // 初期起動
+    updateClock();
     fetchBTC();
-    setInterval(fetchBTC, 60000); // 1分ごとに自動更新
 </script>
 
 </body>
